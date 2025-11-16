@@ -161,31 +161,38 @@ async function handleSubmit(event) {
     return;
   }
 
-  const newSubmission = {
-    id: createId(),
-    schemaVersion: SCHEMA_VERSION,
-    username: username.trim(),
-    ratings,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+  try {
+    const newSubmission = {
+      id: createId(),
+      schemaVersion: SCHEMA_VERSION,
+      username: username.trim(),
+      ratings,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
 
-  const normalizedUsername = username.trim().toLowerCase();
-  const existingIndex = submissions.findIndex(
-    (item) => item.username?.trim().toLowerCase() === normalizedUsername
-  );
+    const normalizedUsername = username.trim().toLowerCase();
+    const existingIndex = submissions.findIndex(
+      (item) => item.username?.trim().toLowerCase() === normalizedUsername
+    );
 
-  if (existingIndex !== -1) {
-    const existing = submissions[existingIndex];
-    newSubmission.id = existing.id;
-    newSubmission.createdAt = existing.createdAt ?? existing.updatedAt ?? newSubmission.createdAt;
+    if (existingIndex !== -1) {
+      const existing = submissions[existingIndex];
+      newSubmission.id = existing.id;
+      newSubmission.createdAt = existing.createdAt ?? existing.updatedAt ?? newSubmission.createdAt;
+    }
+
+    await upsertSubmission(newSubmission);
+    await loadData();
+    render();
+    form.reset();
+    usernameInput.focus();
+  } catch (error) {
+    console.error("Failed to submit ratings:", error);
+    alert(
+      "Unable to store ratings on the server. Please check the console or Supabase table policies."
+    );
   }
-
-  await upsertSubmission(newSubmission);
-  await loadData();
-  render();
-  form.reset();
-  usernameInput.focus();
 }
 
 function renderCriteriaRows() {
@@ -617,10 +624,12 @@ async function handleReset() {
     }
     submissions = [];
     cacheSubmissions(submissions);
+    render();
   } catch (error) {
     console.error("Failed to clear records:", error);
     alert("Failed to clear records. Please try again later.");
   }
+  await loadData();
   render();
 }
 
