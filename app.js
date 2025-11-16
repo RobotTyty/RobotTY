@@ -1,6 +1,5 @@
 const APP_VERSION = "v1.0.0";
 const STORAGE_KEY = "vendor-rating-submissions-v2";
-const BACKUP_KEY = `vendor-rating-backup-${APP_VERSION}`;
 const SCHEMA_VERSION = 2;
 const vendors = ["Yonyou", "Kingdee"];
 const criteria = [
@@ -105,7 +104,6 @@ let pieChart;
 let submissions = [];
 let refreshButton;
 let resetButton;
-let restoreButton;
 
 function initialize() {
   const root = document.getElementById("rating-app");
@@ -116,14 +114,13 @@ function initialize() {
   criteriaBody = document.getElementById("criteria-body");
   refreshButton = document.getElementById("refresh-data");
   resetButton = document.getElementById("reset-data");
-  restoreButton = document.getElementById("restore-version");
 
   if (!root || !form || !usernameInput || !totalsContainer || !tableBody || !criteriaBody) {
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", initialize, { once: true });
       return;
     }
-    console.error("初始化失敗，缺少必要的 DOM 元素。");
+    console.error("Initialization failed: required DOM elements are missing.");
     return;
   }
 
@@ -131,14 +128,12 @@ function initialize() {
   renderCriteriaRows();
   criteriaBody.addEventListener("change", handleCounterpartAutoSelection);
   submissions = loadSubmissions();
-  ensureBackup();
   pieChart = initPieChart();
   render();
 
   form.addEventListener("submit", handleSubmit);
   refreshButton?.addEventListener("click", handleRefresh);
   resetButton?.addEventListener("click", handleReset);
-  restoreButton?.addEventListener("click", handleRestore);
 }
 
 initialize();
@@ -148,14 +143,14 @@ function handleSubmit(event) {
 
   const username = usernameInput.value.trim();
   if (!username) {
-    alert("請輸入登入名稱");
+    alert("Please enter a reviewer name.");
     usernameInput.focus();
     return;
   }
 
   const ratings = collectRatingsFromForm();
   if (!ratings) {
-    alert("請完成所有評分後再提交。");
+    alert("Please complete all ratings before submitting.");
     return;
   }
 
@@ -210,10 +205,10 @@ function renderCriteriaRows() {
           (vendor) => `
         <td>
           <select data-vendor="${vendor}" data-criterion="${criterion.id}" required>
-            <option value="" disabled selected>選擇</option>
-            <option value="A">A（2 分）</option>
-            <option value="B">B（1 分）</option>
-            <option value="N/A">N/A（0 分）</option>
+            <option value="" disabled selected>Select</option>
+            <option value="A">A (2 pts)</option>
+            <option value="B">B (1 pt)</option>
+            <option value="N/A">N/A (0 pt)</option>
           </select>
         </td>
       `
@@ -263,7 +258,7 @@ function loadSubmissions() {
       .map((item) => normalizeSubmission(item))
       .filter((item) => item !== null);
   } catch (error) {
-    console.error("讀取資料時發生錯誤：", error);
+    console.error("Failed to load submissions:", error);
     return [];
   }
 }
@@ -305,30 +300,7 @@ function saveSubmissions(data) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
-    console.warn("儲存資料至 Local Storage 失敗，頁面仍會保留本次提交。", error);
-  }
-}
-
-function ensureBackup() {
-  try {
-    if (!localStorage.getItem(BACKUP_KEY)) {
-      localStorage.setItem(BACKUP_KEY, JSON.stringify(submissions));
-    }
-  } catch (error) {
-    console.warn("建立版本備份失敗：", error);
-  }
-}
-
-function loadBackup() {
-  try {
-    const raw = localStorage.getItem(BACKUP_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.map((item) => normalizeSubmission(item)).filter(Boolean);
-  } catch (error) {
-    console.warn("讀取備份失敗：", error);
-    return [];
+    console.warn("Unable to persist submissions to Local Storage. Data is still kept in memory.", error);
   }
 }
 
@@ -350,7 +322,7 @@ function initPieChart() {
       labels: vendors,
       datasets: [
         {
-          label: "總分",
+          label: "Total Score",
           data: datasetData,
           backgroundColor: ["#ff6fa7", "#ffafcc"],
         },
@@ -366,7 +338,7 @@ function initPieChart() {
           callbacks: {
             label(context) {
               const value = context.raw ?? 0;
-              return `${context.label}: ${formatScore(value)} 分`;
+              return `${context.label}: ${formatScore(value)} pts`;
             },
           },
         },
@@ -424,10 +396,10 @@ function renderTotals() {
     const totalScore = totals[vendor].score ?? 0;
     const averageScore = submissionCount ? totalScore / submissionCount : 0;
 
-    scoreEl.textContent = `${formatScore(totalScore)} 分`;
-    averageEl.textContent = `平均 ${formatScore(averageScore)} 分`;
+    scoreEl.textContent = `${formatScore(totalScore)} pts`;
+    averageEl.textContent = `Average ${formatScore(averageScore)} pts`;
     countEl.textContent =
-      submissionCount > 0 ? `${submissionCount} 份提交` : "尚無提交";
+      submissionCount > 0 ? `${submissionCount} submissions` : "No submissions yet";
   });
 }
 
@@ -438,7 +410,7 @@ function renderTable() {
   if (submissions.length === 0) {
     const emptyRow = document.createElement("tr");
     emptyRow.className = "empty-row";
-    emptyRow.innerHTML = `<td colspan="4">目前尚無資料</td>`;
+    emptyRow.innerHTML = `<td colspan="4">No data yet</td>`;
     tableBody.appendChild(emptyRow);
     return;
   }
@@ -456,8 +428,8 @@ function renderTable() {
     const row = document.createElement("tr");
     row.innerHTML = `
       <td>${escapeHTML(submission.username)}</td>
-      <td>${formatScore(yonyouScore.total)} 分</td>
-      <td>${formatScore(kingdeeScore.total)} 分</td>
+      <td>${formatScore(yonyouScore.total)} pts</td>
+      <td>${formatScore(kingdeeScore.total)} pts</td>
       <td class="breakdown">
         ${createBreakdownDetails(yonyouScore.breakdown, kingdeeScore.breakdown)}
       </td>
@@ -492,7 +464,7 @@ function createBreakdownDetails(yonyouBreakdown, kingdeeBreakdown) {
 
   return `
     <details>
-      <summary>查看明細</summary>
+      <summary>View breakdown</summary>
       <div class="breakdown-panel">
         ${yonyouHtml}
         ${kingdeeHtml}
@@ -509,7 +481,7 @@ function buildBreakdownColumn(vendor, breakdown) {
       return `
         <div class="criterion-row">
           <span class="criterion-label">${indexLabel}. ${escapeHTML(item.label)}（${item.weightPercent}%）</span>
-          <span class="criterion-score">${ratingBadge}<span class="score-text">${formatScore(item.weighted)} 分</span></span>
+          <span class="criterion-score">${ratingBadge}<span class="score-text">${formatScore(item.weighted)} pts</span></span>
         </div>
       `;
     })
@@ -568,19 +540,10 @@ function handleRefresh() {
 }
 
 function handleReset() {
-  const confirmed = window.confirm("確定要清除所有記錄嗎？此操作無法復原。");
+  const confirmed = window.confirm("Clear all records? This action cannot be undone.");
   if (!confirmed) return;
 
   submissions = [];
-  saveSubmissions(submissions);
-  render();
-}
-
-function handleRestore() {
-  const confirmed = window.confirm(`還原至版本 ${APP_VERSION} 的備份？現有資料將被覆蓋。`);
-  if (!confirmed) return;
-
-  submissions = loadBackup();
   saveSubmissions(submissions);
   render();
 }
