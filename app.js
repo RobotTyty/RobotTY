@@ -266,23 +266,26 @@ async function loadData() {
 }
 
 function normalizeSubmission(item) {
-  if (
-    !item ||
-    typeof item !== "object" ||
-    typeof item.username !== "string" ||
-    !item.ratings ||
-    typeof item.ratings !== "object"
-  ) {
+  if (!item || typeof item !== "object" || typeof item.username !== "string") {
     return null;
   }
+
+  const yonyouRatingsSource =
+    (item.yonyou_ratings && typeof item.yonyou_ratings === "object" ? item.yonyou_ratings : null) ??
+    (item.ratings && typeof item.ratings === "object" ? item.ratings.Yonyou : null) ??
+    {};
+  const kingdeeRatingsSource =
+    (item.kingdee_ratings && typeof item.kingdee_ratings === "object" ? item.kingdee_ratings : null) ??
+    (item.ratings && typeof item.ratings === "object" ? item.ratings.Kingdee : null) ??
+    {};
 
   const normalized = {
     id: item.id ?? createId(),
     schemaVersion: SCHEMA_VERSION,
     username: item.username.trim(),
     ratings: {
-      Yonyou: item.yonyou_ratings ?? {},
-      Kingdee: item.kingdee_ratings ?? {},
+      Yonyou: yonyouRatingsSource,
+      Kingdee: kingdeeRatingsSource,
     },
     createdAt: item.created_at ?? item.createdAt ?? new Date().toISOString(),
     updatedAt: item.updated_at ?? item.updatedAt ?? new Date().toISOString(),
