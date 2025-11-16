@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vendor 評分 Dashboard</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer></script>
+    <script src="./app.js" defer></script>
+  </head>
+  <body id="rating-app">
+    <header class="top-bar">
+      <div class="title-group">
+        <h1>Vendor 評分 Dashboard</h1>
+        <span class="version-badge" data-version>v1.0.0</span>
+      </div>
+      <p>
+        依 12 項評估準則計算權重分數（A = 2 分，B = 1 分，N/A = 0 分）；最終分數為所有權重加總。
+      </p>
+    </header>
+
+    <main class="layout">
+      <section class="card form-card">
+        <h2>提交評分</h2>
+        <form id="rating-form">
+          <label class="field">
+            <span>登入名稱</span>
+            <input id="username" name="username" type="text" required placeholder="輸入名稱" />
+          </label>
+
+          <fieldset class="field criteria-fieldset">
+            <legend>請為每一項準則評分</legend>
+            <div class="criteria-hint">
+              權重資料將依下表自動套用，若無意見可選 N/A（視為 0 分）。
+            </div>
+            <div class="table-container criteria-table-wrapper">
+              <table class="criteria-table">
+                <thead>
+                  <tr>
+                    <th>準則</th>
+                    <th>權重</th>
+                    <th>Yonyou 評分</th>
+                    <th>Kingdee 評分</th>
+                  </tr>
+                </thead>
+                <tbody id="criteria-body">
+                  <tr data-criterion="user_community">
+                    <td class="criteria-name">
+                      <span class="criteria-index">01</span>
+                      <div class="criteria-text">
+                        <span class="criteria-title">User community</span>
+                        <span class="criteria-description"
+                          >Availability of online resources, active user forums and
+                          knowledge-sharing platforms.</span
+                        >
+                      </div>
+                    </td>
+                    <td class="criteria-weight">1%</td>
+                    <td>
+                      <select data-vendor="Yonyou" data-criterion="user_community" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select data-vendor="Kingdee" data-criterion="user_community" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr data-criterion="service_expertise">
+                    <td class="criteria-name">
+                      <span class="criteria-index">02</span>
+                      <div class="criteria-text">
+                        <span class="criteria-title">Services expertise</span>
+                        <span class="criteria-description"
+                          >Vendor's professional experience and ability to provide qualified
+                          implementation services.</span
+                        >
+                      </div>
+                    </td>
+                    <td class="criteria-weight">5%</td>
+                    <td>
+                      <select data-vendor="Yonyou" data-criterion="service_expertise" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select data-vendor="Kingdee" data-criterion="service_expertise" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr data-criterion="consulting_quality">
+                    <td class="criteria-name">
+                      <span class="criteria-index">03</span>
+                      <div class="criteria-text">
+                        <span class="criteria-title">Consulting quality</span>
+                        <span class="criteria-description"
+                          >Quality and professionalism of vendor's consultation, including clarity
+                          of guidance and proposed solutions.</span
+                        >
+                      </div>
+                    </td>
+                    <td class="criteria-weight">5%</td>
+                    <td>
+                      <select data-vendor="Yonyou" data-criterion="consulting_quality" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select data-vendor="Kingdee" data-criterion="consulting_quality" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr data-criterion="roadmap">
+                    <td class="criteria-name">
+                      <span class="criteria-index">04</span>
+                      <div class="criteria-text">
+                        <span class="criteria-title">Product roadmap and future vision</span>
+                        <span class="criteria-description"
+                          >Vendor's long-term product development direction, upgrades and
+                          innovation planning.</span
+                        >
+                      </div>
+                    </td>
+                    <td class="criteria-weight">3%</td>
+                    <td>
+                      <select data-vendor="Yonyou" data-criterion="roadmap" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select data-vendor="Kingdee" data-criterion="roadmap" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr data-criterion="customer_focus">
+                    <td class="criteria-name">
+                      <span class="criteria-index">05</span>
+                      <div class="criteria-text">
+                        <span class="criteria-title">Customer focus</span>
+                        <span class="criteria-description"
+                          >Vendor's responsiveness to customer needs, willingness to listen and
+                          customer-centric approach.</span
+                        >
+                      </div>
+                    </td>
+                    <td class="criteria-weight">2%</td>
+                    <td>
+                      <select data-vendor="Yonyou" data-criterion="customer_focus" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select data-vendor="Kingdee" data-criterion="customer_focus" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr data-criterion="product_functionality">
+                    <td class="criteria-name">
+                      <span class="criteria-index">06</span>
+                      <div class="criteria-text">
+                        <span class="criteria-title">Product functionality &amp; performance</span>
+                        <span class="criteria-description"
+                          >Level of maturity, stability and capability of the product to meet
+                          business requirements.</span
+                        >
+                      </div>
+                    </td>
+                    <td class="criteria-weight">25%</td>
+                    <td>
+                      <select data-vendor="Yonyou" data-criterion="product_functionality" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select data-vendor="Kingdee" data-criterion="product_functionality" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr data-criterion="overall_cost">
+                    <td class="criteria-name">
+                      <span class="criteria-index">07</span>
+                      <div class="criteria-text">
+                        <span class="criteria-title">Overall cost</span>
+                        <span class="criteria-description"
+                          >Total cost including licensing, implementation, maintenance and any
+                          recurring fees.</span
+                        >
+                      </div>
+                    </td>
+                    <td class="criteria-weight">20%</td>
+                    <td>
+                      <select data-vendor="Yonyou" data-criterion="overall_cost" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select data-vendor="Kingdee" data-criterion="overall_cost" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr data-criterion="understand_needs">
+                    <td class="criteria-name">
+                      <span class="criteria-index">08</span>
+                      <div class="criteria-text">
+                        <span class="criteria-title">Ability to understand needs</span>
+                        <span class="criteria-description"
+                          >Vendor's ability to understand business requirements and translate the
+                          information into workable solutions.</span
+                        >
+                      </div>
+                    </td>
+                    <td class="criteria-weight">5%</td>
+                    <td>
+                      <select data-vendor="Yonyou" data-criterion="understand_needs" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select data-vendor="Kingdee" data-criterion="understand_needs" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr data-criterion="customization">
+                    <td class="criteria-name">
+                      <span class="criteria-index">09</span>
+                      <div class="criteria-text">
+                        <span class="criteria-title">Customization friendliness</span>
+                        <span class="criteria-description"
+                          >Flexibility for customization and ease of adapting the system without
+                          heavy redevelopment.</span
+                        >
+                      </div>
+                    </td>
+                    <td class="criteria-weight">5%</td>
+                    <td>
+                      <select data-vendor="Yonyou" data-criterion="customization" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select data-vendor="Kingdee" data-criterion="customization" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr data-criterion="ease_of_use">
+                    <td class="criteria-name">
+                      <span class="criteria-index">10</span>
+                      <div class="criteria-text">
+                        <span class="criteria-title">Ease of Use / User Interface (UI/UX)</span>
+                        <span class="criteria-description"
+                          >Overall usability of the system, intuitiveness of the interface and
+                          user-friendliness for daily operations.</span
+                        >
+                      </div>
+                    </td>
+                    <td class="criteria-weight">15%</td>
+                    <td>
+                      <select data-vendor="Yonyou" data-criterion="ease_of_use" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select data-vendor="Kingdee" data-criterion="ease_of_use" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr data-criterion="reporting">
+                    <td class="criteria-name">
+                      <span class="criteria-index">11</span>
+                      <div class="criteria-text">
+                        <span class="criteria-title">Reporting and Analytics Capabilities</span>
+                        <span class="criteria-description"
+                          >Ability to generate reports, dashboards and analytics to support
+                          decision-making, flexibility of reporting formats and data extraction.</span
+                        >
+                      </div>
+                    </td>
+                    <td class="criteria-weight">10%</td>
+                    <td>
+                      <select data-vendor="Yonyou" data-criterion="reporting" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select data-vendor="Kingdee" data-criterion="reporting" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr data-criterion="training">
+                    <td class="criteria-name">
+                      <span class="criteria-index">12</span>
+                      <div class="criteria-text">
+                        <span class="criteria-title">Training and Documentation Quality</span>
+                        <span class="criteria-description"
+                          >Availability and quality of user manuals, training materials, onboarding
+                          guidance and learning support.</span
+                        >
+                      </div>
+                    </td>
+                    <td class="criteria-weight">1%</td>
+                    <td>
+                      <select data-vendor="Yonyou" data-criterion="training" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select data-vendor="Kingdee" data-criterion="training" required>
+                        <option value="" disabled selected>選擇</option>
+                        <option value="A">A（2 分）</option>
+                        <option value="B">B（1 分）</option>
+                        <option value="N/A">N/A（0 分）</option>
+                      </select>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </fieldset>
+
+          <button type="submit" class="primary-button">送出評分</button>
+        </form>
+      </section>
+
+      <div class="control-row">
+        <button type="button" class="ghost-button" id="refresh-data">刷新資料</button>
+        <button type="button" class="ghost-button" id="restore-version">還原至版本 <span data-version>v1.0.0</span></button>
+        <button type="button" class="danger-button" id="reset-data">清除所有記錄</button>
+      </div>
+
+      <section class="dashboard-grid">
+        <section class="card summary-card">
+          <h2>總分概覽</h2>
+          <div id="totals-container" class="totals">
+            <div class="total-box" data-vendor="Yonyou">
+              <h3>Yonyou</h3>
+              <p class="score">0 分</p>
+              <p class="average">平均 0 分</p>
+              <p class="count">0 份提交</p>
+            </div>
+            <div class="total-box" data-vendor="Kingdee">
+              <h3>Kingdee</h3>
+              <p class="score">0 分</p>
+              <p class="average">平均 0 分</p>
+              <p class="count">0 份提交</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="card chart-card">
+          <h2>分數比例</h2>
+          <div class="chart-wrapper">
+            <canvas id="score-pie"></canvas>
+          </div>
+        </section>
+
+        <section class="card table-card">
+          <h2>提交記錄</h2>
+          <div class="table-container">
+            <table id="submissions-table">
+              <thead>
+                <tr>
+                  <th>登入名稱</th>
+                  <th>Yonyou 總分</th>
+                  <th>Kingdee 總分</th>
+                  <th>明細</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="empty-row">
+                  <td colspan="4">目前尚無資料</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <small>資料以瀏覽器 Local Storage 保存</small>
+    </footer>
+  </body>
+</html>
+
