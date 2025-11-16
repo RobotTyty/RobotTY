@@ -322,17 +322,18 @@ function loadCachedSubmissions() {
   }
 }
 
+
 async function upsertSubmission(payload) {
   const timestamp = new Date().toISOString();
 
-  const { data: existing, error: selectError } = await supabaseClient
+  const { data: existing, error: fetchError } = await supabaseClient
     .from(SUPABASE_TABLE)
     .select("id, created_at")
     .eq("username", payload.username)
     .maybeSingle();
 
-  if (selectError && selectError.code !== "PGRST116") {
-    throw selectError;
+  if (fetchError && fetchError.code !== "PGRST116") {
+    throw fetchError;
   }
 
   if (existing) {
@@ -362,6 +363,8 @@ async function upsertSubmission(payload) {
     }
   }
 }
+
+
 
 function initPieChart() {
   const ctx = document.getElementById("score-pie");
