@@ -258,6 +258,24 @@ async function loadData() {
       ? data.map((item) => normalizeSubmission(item)).filter(Boolean)
       : [];
 
+    if (submissions.length > 0) {
+      const dedupMap = new Map();
+      submissions.forEach((submission) => {
+        const key = submission.username.trim().toLowerCase();
+        const current = dedupMap.get(key);
+        const currentTime = current ? new Date(current.updatedAt ?? current.createdAt ?? 0).getTime() : -Infinity;
+        const submissionTime = new Date(submission.updatedAt ?? submission.createdAt ?? 0).getTime();
+        if (!current || submissionTime >= currentTime) {
+          dedupMap.set(key, submission);
+        }
+      });
+      submissions = Array.from(dedupMap.values()).sort(
+        (a, b) =>
+          new Date(b.updatedAt ?? b.createdAt ?? 0).getTime() -
+          new Date(a.updatedAt ?? a.createdAt ?? 0).getTime()
+      );
+    }
+
     cacheSubmissions(submissions);
   } catch (error) {
     console.error("Failed to load submissions:", error);
@@ -331,7 +349,9 @@ async function upsertSubmission(payload) {
   const { data: existing, error: selectError } = await supabaseClient
     .from(SUPABASE_TABLE)
     .select("id, created_at")
-    .eq("username", payload.username)
+    .ilike("username", payload.username)
+    .order("updated_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (selectError && selectError.code !== "PGRST116") {
@@ -342,6 +362,7 @@ async function upsertSubmission(payload) {
     const { error: updateError } = await supabaseClient
       .from(SUPABASE_TABLE)
       .update({
+        username: payload.username,
         yonyou_ratings: payload.ratings.Yonyou,
         kingdee_ratings: payload.ratings.Kingdee,
         updated_at: timestamp,
@@ -479,8 +500,8 @@ function renderTotals() {
     const totalScore = totals[vendor].score ?? 0;
     const averageScore = submissionCount ? totalScore / submissionCount : 0;
 
-    averageEl.textContent = `Average ${formatScore(averageScore)} pts`;
     scoreEl.textContent = `${formatScore(totalScore)} pts`;
+    averageEl.textContent = `Average ${formatScore(averageScore)} pts`;
     countEl.textContent =
       submissionCount > 0 ? `${submissionCount} submissions` : "No submissions yet";
   });

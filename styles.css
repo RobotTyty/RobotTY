@@ -320,13 +320,13 @@ body {
 
 .total-box .average {
   margin: 0;
-  font-size: 1.75rem;
+  font-size: 1.2rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .total-box .score {
-  font-size: 1.35rem;
+  font-size: 1.75rem;
   font-weight: 600;
   margin: 0.1rem 0 0;
 }
