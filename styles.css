@@ -319,14 +319,14 @@ body {
 }
 
 .total-box .score {
-  font-size: 1.95rem;
-  font-weight: 700;
-  margin: 0.15rem 0 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0.1rem 0 0;
 }
 
 .total-box .average {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 600;
   color: var(--text-primary);
 }
