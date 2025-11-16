@@ -416,7 +416,8 @@ function initPieChart() {
             const total = dataset.data.reduce((sum, item) => sum + (item ?? 0), 0);
             if (!total) return "";
             const percentage = ((value / total) * 100).toFixed(1);
-            return `${percentage}%`;
+            const label = ctx.chart.data.labels?.[ctx.dataIndex] ?? "";
+            return `${percentage}%\n${label}`;
           },
           color: "#ffffff",
           font: {
@@ -478,8 +479,8 @@ function renderTotals() {
     const totalScore = totals[vendor].score ?? 0;
     const averageScore = submissionCount ? totalScore / submissionCount : 0;
 
-    scoreEl.textContent = `${formatScore(totalScore)} pts`;
     averageEl.textContent = `Average ${formatScore(averageScore)} pts`;
+    scoreEl.textContent = `${formatScore(totalScore)} pts`;
     countEl.textContent =
       submissionCount > 0 ? `${submissionCount} submissions` : "No submissions yet";
   });
@@ -626,10 +627,27 @@ async function handleReset() {
   if (!confirmed) return;
 
   try {
-    const { error } = await supabaseClient.from(SUPABASE_TABLE).delete().neq("id", null);
-    if (error) {
-      throw error;
+    const { data: rows, error: fetchError } = await supabaseClient
+      .from(SUPABASE_TABLE)
+      .select("id")
+      .limit(1000);
+
+    if (fetchError) {
+      throw fetchError;
     }
+
+    if (rows && rows.length > 0) {
+      const ids = rows.map((row) => row.id).filter(Boolean);
+      const { error: deleteError } = await supabaseClient
+        .from(SUPABASE_TABLE)
+        .delete()
+        .in("id", ids);
+
+      if (deleteError) {
+        throw deleteError;
+      }
+    }
+
     submissions = [];
     cacheSubmissions(submissions);
     render();
