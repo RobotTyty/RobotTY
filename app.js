@@ -323,6 +323,7 @@ function loadCachedSubmissions() {
 }
 
 
+
 async function upsertSubmission(payload) {
   const timestamp = new Date().toISOString();
 
@@ -363,6 +364,7 @@ async function upsertSubmission(payload) {
     }
   }
 }
+
 
 
 
