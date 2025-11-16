@@ -342,7 +342,8 @@ async function upsertSubmission(payload) {
 
   const { error } = await supabaseClient
     .from(SUPABASE_TABLE)
-    .upsert(record, { onConflict: "username" })
+    .upsert(record, { onConflict: "id" })
+    .select()
     .single();
 
   if (error) {
