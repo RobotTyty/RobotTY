@@ -175,6 +175,12 @@ async function handleSubmit(event) {
     (item) => item.username?.trim().toLowerCase() === normalizedUsername
   );
 
+  if (existingIndex !== -1) {
+    const existing = submissions[existingIndex];
+    newSubmission.id = existing.id;
+    newSubmission.createdAt = existing.createdAt ?? existing.updatedAt ?? newSubmission.createdAt;
+  }
+
   await upsertSubmission(newSubmission);
   await loadData();
   render();
@@ -653,5 +659,17 @@ function createId() {
     return crypto.randomUUID();
   }
   return `id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function createSupabaseClient() {
+  if (typeof supabase === "undefined") {
+    throw new Error("Supabase client library failed to load.");
+  }
+
+  return supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: false,
+    },
+  });
 }
 
