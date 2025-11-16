@@ -163,7 +163,6 @@ async function handleSubmit(event) {
 
   try {
     const newSubmission = {
-      id: createId(),
       schemaVersion: SCHEMA_VERSION,
       username: username.trim(),
       ratings,
@@ -178,7 +177,6 @@ async function handleSubmit(event) {
 
     if (existingIndex !== -1) {
       const existing = submissions[existingIndex];
-      newSubmission.id = existing.id;
       newSubmission.createdAt = existing.createdAt ?? existing.updatedAt ?? newSubmission.createdAt;
     }
 
@@ -339,7 +337,6 @@ function loadCachedSubmissions() {
 
 async function upsertSubmission(payload) {
   const record = {
-    id: payload.id,
     username: payload.username,
     yonyou_ratings: payload.ratings.Yonyou,
     kingdee_ratings: payload.ratings.Kingdee,
@@ -347,9 +344,13 @@ async function upsertSubmission(payload) {
     updated_at: new Date().toISOString(),
   };
 
+  if (payload.id) {
+    record.id = payload.id;
+  }
+
   const { error } = await supabaseClient
     .from(SUPABASE_TABLE)
-    .upsert(record, { onConflict: "id" })
+    .upsert(record, { onConflict: "username" })
     .select()
     .single();
 
