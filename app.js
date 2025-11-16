@@ -1,5 +1,9 @@
+const SUPABASE_URL = "https://jwzheesmfyjaulswafsr.supabase.co";
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3emhlZXNtZnlqYXVsc3dhZnNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyNDg2MDcsImV4cCI6MjA3ODgyNDYwN30.lubnjWPrdMFtlZJMav69GVfoguu3XOLWrMH_gi7fplo";
+const SUPABASE_TABLE = "submissions";
 const APP_VERSION = "v1.0.0";
-const STORAGE_KEY = "vendor-rating-submissions-v2";
+const STORAGE_KEY = "vendor-rating-submissions-cache";
 const SCHEMA_VERSION = 2;
 const vendors = ["Yonyou", "Kingdee"];
 const criteria = [
@@ -104,6 +108,7 @@ let pieChart;
 let submissions = [];
 let refreshButton;
 let resetButton;
+let supabaseClient;
 
 function initialize() {
   const root = document.getElementById("rating-app");
@@ -124,12 +129,14 @@ function initialize() {
     return;
   }
 
+  supabaseClient = createSupabaseClient();
   updateVersionBadges();
   renderCriteriaRows();
   criteriaBody.addEventListener("change", handleCounterpartAutoSelection);
-  submissions = loadSubmissions();
-  pieChart = initPieChart();
-  render();
+  loadData().finally(() => {
+    pieChart = initPieChart();
+    render();
+  });
 
   form.addEventListener("submit", handleSubmit);
   refreshButton?.addEventListener("click", handleRefresh);
@@ -138,7 +145,7 @@ function initialize() {
 
 initialize();
 
-function handleSubmit(event) {
+async function handleSubmit(event) {
   event.preventDefault();
 
   const username = usernameInput.value.trim();
@@ -168,16 +175,8 @@ function handleSubmit(event) {
     (item) => item.username?.trim().toLowerCase() === normalizedUsername
   );
 
-  if (existingIndex !== -1) {
-    const existing = submissions[existingIndex];
-    newSubmission.id = existing.id;
-    newSubmission.createdAt = existing.createdAt ?? existing.updatedAt ?? newSubmission.createdAt;
-    submissions[existingIndex] = newSubmission;
-  } else {
-    submissions.push(newSubmission);
-  }
-
-  saveSubmissions(submissions);
+  await upsertSubmission(newSubmission);
+  await loadData();
   render();
   form.reset();
   usernameInput.focus();
@@ -246,20 +245,25 @@ function collectRatingsFromForm() {
   return ratings;
 }
 
-function loadSubmissions() {
+async function loadData() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
+    const { data, error } = await supabaseClient
+      .from(SUPABASE_TABLE)
+      .select("*")
+      .order("updated_at", { ascending: false });
 
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
+    if (error) {
+      throw error;
+    }
 
-    return parsed
-      .map((item) => normalizeSubmission(item))
-      .filter((item) => item !== null);
+    submissions = Array.isArray(data)
+      ? data.map((item) => normalizeSubmission(item)).filter(Boolean)
+      : [];
+
+    cacheSubmissions(submissions);
   } catch (error) {
     console.error("Failed to load submissions:", error);
-    return [];
+    submissions = loadCachedSubmissions();
   }
 }
 
@@ -278,13 +282,16 @@ function normalizeSubmission(item) {
     id: item.id ?? createId(),
     schemaVersion: SCHEMA_VERSION,
     username: item.username.trim(),
-    ratings: {},
-    createdAt: item.createdAt ?? new Date().toISOString(),
-    updatedAt: item.updatedAt ?? item.createdAt ?? new Date().toISOString(),
+    ratings: {
+      Yonyou: item.yonyou_ratings ?? {},
+      Kingdee: item.kingdee_ratings ?? {},
+    },
+    createdAt: item.created_at ?? item.createdAt ?? new Date().toISOString(),
+    updatedAt: item.updated_at ?? item.updatedAt ?? new Date().toISOString(),
   };
 
   for (const vendor of vendors) {
-    const source = item.ratings[vendor];
+    const source = normalized.ratings[vendor];
     normalized.ratings[vendor] = {};
 
     for (const criterion of criteria) {
@@ -296,11 +303,44 @@ function normalizeSubmission(item) {
   return normalized;
 }
 
-function saveSubmissions(data) {
+function cacheSubmissions(data) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
-    console.warn("Unable to persist submissions to Local Storage. Data is still kept in memory.", error);
+    console.warn("Unable to cache submissions locally.", error);
+  }
+}
+
+function loadCachedSubmissions() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((item) => normalizeSubmission(item)).filter(Boolean);
+  } catch (error) {
+    console.error("Failed to read cached submissions:", error);
+    return [];
+  }
+}
+
+async function upsertSubmission(payload) {
+  const record = {
+    id: payload.id,
+    username: payload.username,
+    yonyou_ratings: payload.ratings.Yonyou,
+    kingdee_ratings: payload.ratings.Kingdee,
+    created_at: payload.createdAt,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await supabaseClient
+    .from(SUPABASE_TABLE)
+    .upsert(record, { onConflict: "username" })
+    .single();
+
+  if (error) {
+    throw error;
   }
 }
 
@@ -554,17 +594,26 @@ function updateVersionBadges() {
   });
 }
 
-function handleRefresh() {
-  submissions = loadSubmissions();
+async function handleRefresh() {
+  await loadData();
   render();
 }
 
-function handleReset() {
+async function handleReset() {
   const confirmed = window.confirm("Clear all records? This action cannot be undone.");
   if (!confirmed) return;
 
-  submissions = [];
-  saveSubmissions(submissions);
+  try {
+    const { error } = await supabaseClient.from(SUPABASE_TABLE).delete().neq("id", null);
+    if (error) {
+      throw error;
+    }
+    submissions = [];
+    cacheSubmissions(submissions);
+  } catch (error) {
+    console.error("Failed to clear records:", error);
+    alert("Failed to clear records. Please try again later.");
+  }
   render();
 }
 
