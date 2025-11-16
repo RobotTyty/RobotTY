@@ -687,3 +687,4 @@ function createSupabaseClient() {
     },
   });
 }
+
