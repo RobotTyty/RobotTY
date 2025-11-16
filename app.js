@@ -316,6 +316,10 @@ function initPieChart() {
     };
   }
 
+  if (typeof ChartDataLabels !== "undefined" && Chart.registry?.plugins?.get("datalabels") !== ChartDataLabels) {
+    Chart.register(ChartDataLabels);
+  }
+
   return new Chart(ctx, {
     type: "pie",
     data: {
@@ -338,8 +342,24 @@ function initPieChart() {
           callbacks: {
             label(context) {
               const value = context.raw ?? 0;
-              return `${context.label}: ${formatScore(value)} pts`;
+              const total = context.dataset.data.reduce((sum, item) => sum + (item ?? 0), 0);
+              const percentage = total ? ((value / total) * 100).toFixed(1) : "0.0";
+              return `${context.label}: ${formatScore(value)} pts (${percentage}%)`;
             },
+          },
+        },
+        datalabels: {
+          formatter(value, ctx) {
+            const dataset = ctx.chart.data.datasets[0];
+            const total = dataset.data.reduce((sum, item) => sum + (item ?? 0), 0);
+            if (!total) return "";
+            const percentage = ((value / total) * 100).toFixed(1);
+            return `${percentage}%`;
+          },
+          color: "#ffffff",
+          font: {
+            weight: "700",
+            size: 14,
           },
         },
       },
