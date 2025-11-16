@@ -96,14 +96,6 @@ body {
   gap: 1.25rem;
 }
 
-.control-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  justify-content: flex-end;
-}
-
-.ghost-button,
 .danger-button {
   border-radius: 999px;
   padding: 0.55rem 1.3rem;
@@ -112,17 +104,6 @@ body {
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   border: 1px solid transparent;
-}
-
-.ghost-button {
-  background: rgba(255, 111, 167, 0.12);
-  border-color: rgba(255, 111, 167, 0.4);
-  color: var(--accent-strong);
-}
-
-.ghost-button:hover {
-  background: rgba(255, 111, 167, 0.18);
-  transform: translateY(-1px);
 }
 
 .danger-button {
@@ -134,6 +115,12 @@ body {
 .danger-button:hover {
   background: rgba(225, 29, 72, 0.16);
   transform: translateY(-1px);
+}
+
+.footer-actions {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.5rem;
 }
 
 .field {
@@ -482,10 +469,6 @@ tbody tr:last-child td {
 @media (max-width: 768px) {
   .layout {
     padding: 1.75rem 1.25rem 5rem;
-  }
-
-  .control-row {
-    justify-content: flex-start;
   }
 
   .criteria-table-wrapper {
