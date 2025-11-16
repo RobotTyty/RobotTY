@@ -120,6 +120,7 @@ body {
 .footer-actions {
   display: flex;
   justify-content: center;
+  gap: 0.75rem;
   margin-bottom: 0.5rem;
 }
 
