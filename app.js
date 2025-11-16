@@ -163,22 +163,9 @@ async function handleSubmit(event) {
 
   try {
     const newSubmission = {
-      schemaVersion: SCHEMA_VERSION,
       username: username.trim(),
       ratings,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     };
-
-    const normalizedUsername = username.trim().toLowerCase();
-    const existingIndex = submissions.findIndex(
-      (item) => item.username?.trim().toLowerCase() === normalizedUsername
-    );
-
-    if (existingIndex !== -1) {
-      const existing = submissions[existingIndex];
-      newSubmission.createdAt = existing.createdAt ?? existing.updatedAt ?? newSubmission.createdAt;
-    }
 
     await upsertSubmission(newSubmission);
     await loadData();
@@ -336,26 +323,43 @@ function loadCachedSubmissions() {
 }
 
 async function upsertSubmission(payload) {
-  const record = {
-    username: payload.username,
-    yonyou_ratings: payload.ratings.Yonyou,
-    kingdee_ratings: payload.ratings.Kingdee,
-    created_at: payload.createdAt,
-    updated_at: new Date().toISOString(),
-  };
+  const timestamp = new Date().toISOString();
 
-  if (payload.id) {
-    record.id = payload.id;
+  const { data: existing, error: selectError } = await supabaseClient
+    .from(SUPABASE_TABLE)
+    .select("id, created_at")
+    .eq("username", payload.username)
+    .maybeSingle();
+
+  if (selectError && selectError.code !== "PGRST116") {
+    throw selectError;
   }
 
-  const { error } = await supabaseClient
-    .from(SUPABASE_TABLE)
-    .upsert(record, { onConflict: "username" })
-    .select()
-    .single();
+  if (existing) {
+    const { error: updateError } = await supabaseClient
+      .from(SUPABASE_TABLE)
+      .update({
+        yonyou_ratings: payload.ratings.Yonyou,
+        kingdee_ratings: payload.ratings.Kingdee,
+        updated_at: timestamp,
+      })
+      .eq("id", existing.id);
 
-  if (error) {
-    throw error;
+    if (updateError) {
+      throw updateError;
+    }
+  } else {
+    const { error: insertError } = await supabaseClient.from(SUPABASE_TABLE).insert({
+      username: payload.username,
+      yonyou_ratings: payload.ratings.Yonyou,
+      kingdee_ratings: payload.ratings.Kingdee,
+      created_at: timestamp,
+      updated_at: timestamp,
+    });
+
+    if (insertError) {
+      throw insertError;
+    }
   }
 }
 
